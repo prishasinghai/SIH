@@ -17,6 +17,13 @@ if 'ocr_transcript' not in st.session_state:
     st.session_state['ocr_transcript'] = ""
 if 'frozen_questions' not in st.session_state:
     st.session_state['frozen_questions'] = None
+if 'persisted_ans1' not in st.session_state:
+    st.session_state['persisted_ans1'] = ""
+
+# --- CALLBACK FUNCTION TO SECURELY SAVE ANSWER 1 BEFORE RERENDER ---
+def save_answer_1():
+    if 'ans_1_mic' in st.session_state and st.session_state['ans_1_mic']:
+        st.session_state['persisted_ans1'] = st.session_state['ans_1_mic']
 
 # --- MULTILINGUAL INTERFACE DICTIONARY ---
 ui_lang = st.selectbox("🌐 Select Portal UI Language / पोर्टल की भाषा चुनें", ["English", "Hindi (हिंदी)"])
@@ -26,7 +33,7 @@ text_labels = {
         "title": "🏥 Voice & Vision AI Patient Intake Portal",
         "caption": "First-Year BTech Prototype: Multilingual Speech & OCR Driven Routing",
         "sec1_h": "1. 🎙️ Speak Your Symptoms & Profile",
-        "sec1_p": "Click the button below and describe your name, age, and symptoms in **English, Hindi (हिंदी), or Urdu (اردो)**.",
+        "sec1_p": "Click the button below and describe your name, age, and symptoms in **English, Hindi (हिंदी), or Urdu (اردو)**.",
         "rec_btn_1": "🔴 Start Recording Voice (English/Hindi/Urdu)",
         "stop_btn_1": "⏹️ Stop & Process Voice",
         "capture_success": "✨ Voice Successfully Captured!",
@@ -123,6 +130,7 @@ if spoken_text:
         translated_voice = translate_to_english(spoken_text)
         st.session_state['voice_transcript'] = translated_voice
         st.session_state['frozen_questions'] = None 
+        st.session_state['persisted_ans1'] = ""
 
 if st.session_state['voice_transcript']:
     st.info(f"{lbl['trans_msg']} {st.session_state['voice_transcript']}")
@@ -141,6 +149,7 @@ if uploaded_image is not None:
         raw_ocr = " ".join(ocr_result)
         st.session_state['ocr_transcript'] = translate_to_english(raw_ocr)
         st.session_state['frozen_questions'] = None
+        st.session_state['persisted_ans1'] = ""
         st.success(lbl["ocr_success"])
 
 if st.session_state['ocr_transcript']:
@@ -187,11 +196,10 @@ if st.session_state['voice_transcript'] or st.session_state['ocr_transcript']:
     speak_text(q_data['q1'], key="audio_q1")
     
     st.write("Speak answer to Q1 / पहले प्रश्न का उत्तर दें:")
-    ans_1 = speech_to_text(start_prompt=lbl["rec_btn_general"], stop_prompt=lbl["stop_btn_general"], language='en', key='ans_1_mic')
+    speech_to_text(start_prompt=lbl["rec_btn_general"], stop_prompt=lbl["stop_btn_general"], language='en', key='ans_1_mic', on_change=save_answer_1)
     
-    recorded_ans1 = st.session_state.get('ans_1_mic', "")
-    if recorded_ans1:
-        st.write(f"**Answer Recorded:** {recorded_ans1}")
+    if st.session_state['persisted_ans1']:
+        st.write(f"**Answer Recorded:** {st.session_state['persisted_ans1']}")
 
     # --- Final Patient Routing Display (Directly Appears Instantly!) ---
     st.divider()
@@ -199,6 +207,7 @@ if st.session_state['voice_transcript'] or st.session_state['ocr_transcript']:
     if current_category == "ortho":
         rec_text = "Please report to the AYUSH Integrated Rheumatology & Musculoskeletal Clinic (Sandhigata Vata Desk) at Block C. You are scheduled with Dr. Anand Sharma, Chief Ayurvedic Marma & Orthopedic Specialist."
         st.success(rec_text)
+    elif current_category == "cardio":
     elif current_category == "cardio":
         rec_text = "Please report to the Hridroga & Rasayana Clinic (Ayurvedic Preventive Cardiology Wing) at Block A, Room 102. You are scheduled with Dr. Kiran Rao, Senior Consultant in Ayurvedic Internal Medicine (Kaya Chikitsa)."
         st.error(rec_text)
@@ -229,7 +238,7 @@ if st.session_state['voice_transcript'] or st.session_state['ocr_transcript']:
         "Field,Value\n"
         f"Base Transcript,{st.session_state['voice_transcript']}\n"
         f"OCR Data,{st.session_state['ocr_transcript']}\n"
-        f"Followup Answer,{recorded_ans1}\n"
+        f"Followup Answer,{st.session_state['persisted_ans1']}\n"
         f"Routing Department,Ayurveda - {current_category}"
     )
     
@@ -240,4 +249,3 @@ if st.session_state['voice_transcript'] or st.session_state['ocr_transcript']:
         mime="text/csv",
         key="btn_csv_dl"
     )
-
