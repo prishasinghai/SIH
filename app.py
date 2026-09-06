@@ -10,7 +10,7 @@ from deep_translator import GoogleTranslator
 # Initialize Page Setting
 st.set_page_config(page_title="AI Swasthya Voice Portal", page_icon="🎙️", layout="centered")
 
-# --- INITIALIZE SESSION STATES TO PREVENT RERENDER RESET ERRORS ---
+# --- INITIALIZE INTERNAL MEMORY BANK (SESSION STATE) ---
 if 'voice_transcript' not in st.session_state:
     st.session_state['voice_transcript'] = ""
 if 'ocr_transcript' not in st.session_state:
@@ -26,7 +26,7 @@ text_labels = {
         "title": "🏥 Voice & Vision AI Patient Intake Portal",
         "caption": "First-Year BTech Prototype: Multilingual Speech & OCR Driven Routing",
         "sec1_h": "1. 🎙️ Speak Your Symptoms & Profile",
-        "sec1_p": "Click the button below and describe your name, age, and symptoms in **English, Hindi (हिंदी), or Urdu (اردو)**.",
+        "sec1_p": "Click the button below and describe your name, age, and symptoms in **English, Hindi (हिंदी), or Urdu (اردो)**.",
         "rec_btn_1": "🔴 Start Recording Voice (English/Hindi/Urdu)",
         "stop_btn_1": "⏹️ Stop & Process Voice",
         "capture_success": "✨ Voice Successfully Captured!",
@@ -39,8 +39,7 @@ text_labels = {
         "ocr_success": "✓ AI Character Extraction & Translation Finished!",
         "ocr_expander": "📄 View Extracted Text Matrix",
         "sec3_h": "3. 🩺 Intelligent Clinical Guidance",
-        "tailored_h": "💡 Tailored AI Follow-up Question 1:",
-        "tailored_h2": "💡 Deepening AI Follow-up Question 2:",
+        "tailored_h": "💡 Tailored AI Follow-up Question:",
         "rec_btn_general": "🎙️ Record Answer",
         "stop_btn_general": "⏹️ Save Answer",
         "assigned_h": "### 📍 Your Assigned Doctor & Clinic Allocation",
@@ -65,12 +64,11 @@ text_labels = {
         "ocr_success": "एआई कैरेक्टर निष्कर्षण और अनुवाद समाप्त!",
         "ocr_expander": "निकाले गए टेक्स्ट को देखें",
         "sec3_h": "3. 🩺 बुद्धिमान नैदानिक मार्गदर्शन",
-        "tailored_h": "अनुकूलित एआई अनुवर्ती प्रश्न 1:",
-        "tailored_h2": "गहन एआई अनुवर्ती प्रश्न 2:",
+        "tailored_h": "अनुकूलित एआई अनुवर्ती प्रश्न:",
         "rec_btn_general": "उत्तर रिकॉर्ड करें",
         "stop_btn_general": "उत्तर सहेजें",
         "assigned_h": "### आपके आवंटित डॉक्टर और क्लिनिक स्थान",
-        "case_h": "औपचारिक नैदानिक केस शीट और निर्यात",
+        "case_h": "औपचारिक नैदानिक के लिए केस शीट और निर्यात",
         "health_rec_h": "### आयुष डिजिटल स्वास्थ्य रिकॉर्ड",
         "download_lbl": "क्लिनिक केस शीट डाउनलोड करें (CSV)"
     }
@@ -81,7 +79,6 @@ lbl = text_labels[ui_lang]
 st.title(lbl["title"])
 st.caption(lbl["caption"])
 
-# Helper function to generate and play voice audio back to the patient
 def speak_text(text_to_speak, key):
     try:
         tts = gTTS(text=text_to_speak, lang='en', slow=False)
@@ -91,7 +88,6 @@ def speak_text(text_to_speak, key):
     except Exception as e:
         pass
 
-# Helper function to translate any language text to English safely
 def translate_to_english(text_to_translate):
     if not text_to_translate or not text_to_translate.strip():
         return ""
@@ -101,7 +97,6 @@ def translate_to_english(text_to_translate):
     except Exception as e:
         return text_to_translate.lower()
 
-# Cache the AI text-reader model so it doesn't slow down the site on every button click
 @st.cache_resource
 def load_ocr_reader():
     return easyocr.Reader(['en'])
@@ -167,41 +162,82 @@ if st.session_state['voice_transcript'] or st.session_state['ocr_transcript']:
 
         if is_ortho:
             q1 = "Based on your bone or joint pain indicators, does your stiffness significantly worsen during cold weather mornings or after sitting down for a long period?"
-            q2 = "Follow-up Question: Do you also experience swelling or a cracking clicking sound when moving that joint?"
             category = "ortho"
         elif is_cardio:
             q1 = "Since cardiovascular patterns are highlighted, are you experiencing any active numbness in your left arm, jaw pain, or sudden cold sweats?"
-            q2 = "Follow-up Question: Does this chest discomfort worsen when climbing stairs or taking deep breaths?"
             category = "cardio"
         elif is_fever_cold:
             q1 = "Regarding your fever or cold symptoms, do you currently have a sore throat, loss of taste, or a cough that produces dark mucus?"
-            q2 = "Follow-up Question: Is your body temperature crossing 101 degrees, and are you experiencing severe shivering?"
             category = "fever"
         elif is_stomach:
             q1 = "For your abdominal issues, are you experiencing sharp cramps on an empty stomach or have you recently consumed outside street food?"
-            q2 = "Follow-up Question: Is the stomach pain radiating to your lower back, or accompanied by vomiting?"
             category = "stomach"
         else:
             q1 = "Could you tell me if your general symptom started suddenly today, or has it been ongoing for more than three days?"
-            q2 = "Follow-up Question: Are you experiencing generalized fatigue or trouble sleeping due to this condition?"
             category = "general"
             
-        st.session_state['frozen_questions'] = {"q1": q1, "q2": q2, "category": category}
+        st.session_state['frozen_questions'] = {"q1": q1, "category": category}
 
     q_data = st.session_state['frozen_questions']
     current_category = q_data["category"]
 
-    # Render Frozen Question 1
+    # --- Render The Single Follow-up Question ---
     st.subheader(lbl["tailored_h"])
     st.info(f"🤖 Q1: {q_data['q1']}")
     speak_text(q_data['q1'], key="audio_q1")
     
     st.write("Speak answer to Q1 / पहले प्रश्न का उत्तर दें:")
     ans_1 = speech_to_text(start_prompt=lbl["rec_btn_general"], stop_prompt=lbl["stop_btn_general"], language='en', key='ans_1_mic')
-    if ans_1:
-        st.write(f"Answer 1 Recorded: {ans_1}")
+    
+    recorded_ans1 = st.session_state.get('ans_1_mic', "")
+    if recorded_ans1:
+        st.write(f"**Answer Recorded:** {recorded_ans1}")
 
-    # Render Frozen Question 2 (Follow up to the follow up)
+    # --- Final Patient Routing Display (Directly Appears Instantly!) ---
     st.divider()
-    st.subheader(lbl["tailored_h2"])
-    st.warning(f"🤖 Q2: {q_data['q2']}")
+    st.markdown(lbl["assigned_h"])
+    if current_category == "ortho":
+        rec_text = "Please report to the AYUSH Integrated Rheumatology & Musculoskeletal Clinic (Sandhigata Vata Desk) at Block C. You are scheduled with Dr. Anand Sharma, Chief Ayurvedic Marma & Orthopedic Specialist."
+        st.success(rec_text)
+    elif current_category == "cardio":
+        rec_text = "Please report to the Hridroga & Rasayana Clinic (Ayurvedic Preventive Cardiology Wing) at Block A, Room 102. You are scheduled with Dr. Kiran Rao, Senior Consultant in Ayurvedic Internal Medicine (Kaya Chikitsa)."
+        st.error(rec_text)
+    elif current_category == "fever":
+        rec_text = "Please proceed to the Jvara & Shwasa Roga OPD (Ayurvedic Respiratory Care Unit) at Block B. You will be screened by Dr. Neha Patil, Resident Medical Officer (Kaya Chikitsa)."
+        st.success(rec_text)
+    elif current_category == "stomach":
+        rec_text = "Please proceed to the Udara Roga & Annavaha Srotas Help Desk (Ayurvedic Gastroenterology Desk) at Room 104. You will see Dr. Suresh Mehta, Senior Specialist in Agni & Digestion Optimization."
+        st.success(rec_text)
+    else:
+        rec_text = "Please proceed to the General Ayush Wellness Clinic (Prathamika Chikitsa Center) at the General OPD Triage Desk for baseline constitutional (Prakriti) assessment."
+        st.success(rec_text)
+
+    # --- SECTION 4: DATA EXPORT SHEET ---
+    st.divider()
+    st.header(lbl["case_h"])
+    st.markdown(lbl["health_rec_h"])
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.text_input("Patient Prakriti (AI Inferred)", value="Inference Active", disabled=True, key="prakriti_inferred")
+        st.text_area("Symptom Aggravation Logs", value=f"Profile: {combined_health_profile[:60]}...", disabled=True, key="aggravation_logs")
+    with col2:
+        st.text_input("Associated Agni State", value="Inferred Assessment", disabled=True, key="agni_state")
+        st.text_input("ABDM Compliance Status", value="Ready for FHIR Integration Pipeline", disabled=True, key="abdm_status")
+
+    patient_data = (
+        "Field,Value\n"
+        f"Base Transcript,{st.session_state['voice_transcript']}\n"
+        f"OCR Data,{st.session_state['ocr_transcript']}\n"
+        f"Followup Answer,{recorded_ans1}\n"
+        f"Routing Department,Ayurveda - {current_category}"
+    )
+    
+    st.download_button(
+        label=lbl["download_lbl"],
+        data=patient_data,
+        file_name="ayush_patient_case.csv",
+        mime="text/csv",
+        key="btn_csv_dl"
+    )
+
