@@ -5,3 +5,4 @@ easyocr
 opencv-python-headless
 torch --index-url https://pytorch.org
 torchvision --index-url https://pytorch.org
+deep-translator
