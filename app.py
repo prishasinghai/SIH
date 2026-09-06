@@ -200,15 +200,16 @@ if st.session_state['voice_transcript'] or st.session_state['ocr_transcript']:
     current_category = q_data["category"]
 
     # 🛑 Render Question 1 
-Use code with caution.st.subheader(lbl["tailored_h"])if current_category == "ortho" or current_category == "cardio":st.error(f"🤖 Q1: {q_data['q1']}")else:st.info(f"🤖 Q1: {q_data['q1']}")# Audio trigger box (runs only once per initialization context via functional keys)speak_text(q_data['q1'], key="audio_q1")st.write("Speak answer to Q1 / पहले प्रश्न का उत्तर दें:")ans_1 = speech_to_text(start_prompt=lbl["rec_btn_general"], stop_prompt=lbl["stop_btn_general"], language='en', key='ans_1_mic')if ans_1:st.write(f"Answer 1 Given: {ans_1}")# 🛑 Render Question 2 (Follow-up to the follow-up question)st.divider()st.subheader(lbl["tailored_h2"])st.warning(f"🤖 Q2: {q_data['q2']}")speak_text(q_data['q2'], key="audio_q2")st.write("Speak answer to Q2 / दूसरे प्रश्न का उत्तर दें:")ans_2 = speech_to_text(start_prompt=lbl["rec_btn_general"], stop_prompt=lbl["stop_btn_general"], language='en', key='ans_2_mic')if ans_2:st.write(f"Answer 2 Given: {ans_2}")# 📍 Final Routing Configurationsst.markdown(lbl["assigned_h"])if current_category == "ortho":rec_text = "Please report to the AYUSH Integrated Rheumatology & Musculoskeletal Clinic at Block C. You will be visiting Dr. Anand Sharma, Chief Ayurvedic Orthopedic Specialist."st.success(rec_text)elif current_category == "cardio":rec_text = "Please report to the Primary Preventive Cardiology Clinic at Block A, Room 102. You are scheduled with Dr. Kiran Rao, Senior Consultant Cardiologist."st.error(rec_text)elif current_category == "fever":rec_text = "Please proceed to General Medicine OPD at Block B. You will be screened by Dr. Neha Patil, General Medical Officer."st.success(rec_text)elif current_category == "stomach":rec_text = "Please proceed to the Gastroenterology & Internal Medicine Help Desk at Room 104. You will see Dr. Suresh Mehta."st.success(rec_text)else:rec_text = "Please proceed to the Community Primary Health Center, General Emergency and Triage Desk for baseline assessment."st.success(rec_text)# --- SECTION 4: DATA EXPORT SHEET ---st.divider()st.header(lbl["case_h"])st.markdown(lbl["health_rec_h"])col1, col2 = st.columns(2)with col1:st.text_input("Patient Prakriti / Constitution (AI Inferred)", value="Inference Active", disabled=True)st.text_area("Symptom Aggravation Logs", value=f"Profile Context: {combined_health_profile[:100]}...", disabled=True)with col2:st.text_input("Associated Agni (Digestive State)", value="Mandagni Inferred Assessment", disabled=True)st.text_input("ABDM Compliance Status", value="Ready for FHIR Integration Pipeline", disabled=True)patient_data = f"Field,Value\nBase Transcript,{st.session_state['voice_transcript']}\nOCR Data,{st.session_state['ocr_transcript']}\nRouting Department,{current_category}"st.download_button(label=lbl["download_lbl"],data=patient_data,file_name="ayush_patient_case.csv",mime="text/csv")
-<layout>
-disclaimer(disclaimerTypeAsInt=2, suppress=true)
-</layout>
+     st.subheader(lbl["tailored_h"])
+    st.info(f"🤖 Q1: {q_data['q1']}")
+    speak_text(q_data['q1'], key="audio_q1")
+    
+    st.write("Speak answer to Q1 / पहले प्रश्न का उत्तर दें:")
+    ans_1 = speech_to_text(start_prompt=lbl["rec_btn_general"], stop_prompt=lbl["stop_btn_general"], language='en', key='ans_1_mic')
+    if ans_1:
+        st.write(f"Answer 1 Recorded: {ans_1}")
 
-### 🛠️ How to run it:
-1. Open your `app.py` file on **GitHub Codespaces**.
-2. Select all existing text and delete it, then paste this complete code block.
-3. Save the file (`Ctrl + S` or `Cmd + S`).
-4. Type `streamlit run app.py` in your terminal box and view the newly updated page. 
-
-Would you like to build custom **data visualizations** next showing patient traffic to different clinics, or would you like to see how to connect this to an **SMS alert configuration**?
+    # Render Frozen Question 2 (Follow up to the follow up)
+    st.divider()
+    st.subheader(lbl["tailored_h2"])
+    st.warning(f"🤖 Q2: {q_data['q2']}")
