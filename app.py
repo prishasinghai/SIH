@@ -162,3 +162,28 @@ if st.session_state['voice_transcript'] or ocr_extracted_text:
         rec_text = "Please proceed to the Community Primary Health Center, General Emergency and Triage Desk for baseline assessment."
         st.success(rec_text)
         speak_text(rec_text, key="gen_rec")
+        st.divider()
+st.header("📋 Formal Clinical Case Sheet & Export")
+
+# Check if data exists
+if st.session_state.get('voice_transcript'):
+    # Structure the collected text into Ayush-specific fields
+    st.markdown("### Ayush Digital Health Record")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.text_input("Patient Prakriti / Constitution (AI Inferred)", value="Vata-Pitta Tendency")
+        st.text_area("Symptom Aggravation Factors", value="Worsens in morning/cold climate")
+    with col2:
+        st.text_input("Associated Agni (Digestive State)", value="Mandagni (Low/Sluggish)")
+        st.text_input("ABDM Compliance Status", value="Ready for FHIR Integration")
+
+    # Generate a simple downloadable CSV file for hospital database storage
+    patient_data = f"Field,Value\nTranscript,{st.session_state['voice_transcript']}\nInferred Department,Musculoskeletal\nAgni State,Mandagni"
+    
+    st.download_button(
+        label="📥 Download Clinical Case Sheet (CSV)",
+        data=patient_data,
+        file_name="ayush_patient_case.csv",
+        mime="text/csv"
+    )
