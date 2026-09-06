@@ -208,7 +208,7 @@ if st.session_state['voice_transcript'] or st.session_state['ocr_transcript']:
     elif current_category == "cardio":
         rec_text = "Please report to the Hridroga & Rasayana Clinic (Ayurvedic Preventive Cardiology Wing) at Block A, Room 102. You are scheduled with Dr. Kiran Rao, Senior Consultant in Ayurvedic Internal Medicine (Kaya Chikitsa)."
         st.error(rec_text)
-        elif current_category == "fever":
+    elif current_category == "fever":
         rec_text = "Please proceed to the Jvara & Shwasa Roga OPD (Ayurvedic Respiratory Care Unit) at Block B. You will be screened by Dr. Neha Patil, Resident Medical Officer (Kaya Chikitsa)."
         st.success(rec_text)
     elif current_category == "stomach":
