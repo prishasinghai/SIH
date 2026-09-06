@@ -208,7 +208,6 @@ if st.session_state['voice_transcript'] or st.session_state['ocr_transcript']:
         rec_text = "Please report to the AYUSH Integrated Rheumatology & Musculoskeletal Clinic (Sandhigata Vata Desk) at Block C. You are scheduled with Dr. Anand Sharma, Chief Ayurvedic Marma & Orthopedic Specialist."
         st.success(rec_text)
     elif current_category == "cardio":
-    elif current_category == "cardio":
         rec_text = "Please report to the Hridroga & Rasayana Clinic (Ayurvedic Preventive Cardiology Wing) at Block A, Room 102. You are scheduled with Dr. Kiran Rao, Senior Consultant in Ayurvedic Internal Medicine (Kaya Chikitsa)."
         st.error(rec_text)
     elif current_category == "fever":
