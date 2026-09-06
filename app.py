@@ -20,11 +20,6 @@ if 'frozen_questions' not in st.session_state:
 if 'persisted_ans1' not in st.session_state:
     st.session_state['persisted_ans1'] = ""
 
-# --- CALLBACK FUNCTION TO SECURELY SAVE ANSWER 1 BEFORE RERENDER ---
-def save_answer_1():
-    if 'ans_1_mic' in st.session_state and st.session_state['ans_1_mic']:
-        st.session_state['persisted_ans1'] = st.session_state['ans_1_mic']
-
 # --- MULTILINGUAL INTERFACE DICTIONARY ---
 ui_lang = st.selectbox("🌐 Select Portal UI Language / पोर्टल की भाषा चुनें", ["English", "Hindi (हिंदी)"])
 
@@ -195,7 +190,7 @@ if st.session_state['voice_transcript'] or st.session_state['ocr_transcript']:
     st.info(f"🤖 Q1: {q_data['q1']}")
     speak_text(q_data['q1'], key="audio_q1")
     
-       st.write("Speak answer to Q1 / पहले प्रश्न का उत्तर दें:")
+    st.write("Speak answer to Q1 / पहले प्रश्न का उत्तर दें:")
     ans_1 = speech_to_text(start_prompt=lbl["rec_btn_general"], stop_prompt=lbl["stop_btn_general"], language='en', key='ans_1_mic')
     
     if ans_1:
@@ -204,7 +199,7 @@ if st.session_state['voice_transcript'] or st.session_state['ocr_transcript']:
     if st.session_state['persisted_ans1']:
         st.write(f"**Answer Recorded:** {st.session_state['persisted_ans1']}")
 
-    # --- Final Patient Routing Display (Directly Appears Instantly!) ---
+    # --- Final Patient Routing Display (Instantly Visible) ---
     st.divider()
     st.markdown(lbl["assigned_h"])
     if current_category == "ortho":
@@ -213,7 +208,7 @@ if st.session_state['voice_transcript'] or st.session_state['ocr_transcript']:
     elif current_category == "cardio":
         rec_text = "Please report to the Hridroga & Rasayana Clinic (Ayurvedic Preventive Cardiology Wing) at Block A, Room 102. You are scheduled with Dr. Kiran Rao, Senior Consultant in Ayurvedic Internal Medicine (Kaya Chikitsa)."
         st.error(rec_text)
-    elif current_category == "fever":
+        elif current_category == "fever":
         rec_text = "Please proceed to the Jvara & Shwasa Roga OPD (Ayurvedic Respiratory Care Unit) at Block B. You will be screened by Dr. Neha Patil, Resident Medical Officer (Kaya Chikitsa)."
         st.success(rec_text)
     elif current_category == "stomach":
@@ -251,3 +246,4 @@ if st.session_state['voice_transcript'] or st.session_state['ocr_transcript']:
         mime="text/csv",
         key="btn_csv_dl"
     )
+
