@@ -195,9 +195,12 @@ if st.session_state['voice_transcript'] or st.session_state['ocr_transcript']:
     st.info(f"🤖 Q1: {q_data['q1']}")
     speak_text(q_data['q1'], key="audio_q1")
     
-    st.write("Speak answer to Q1 / पहले प्रश्न का उत्तर दें:")
-    speech_to_text(start_prompt=lbl["rec_btn_general"], stop_prompt=lbl["stop_btn_general"], language='en', key='ans_1_mic', on_change=save_answer_1)
+       st.write("Speak answer to Q1 / पहले प्रश्न का उत्तर दें:")
+    ans_1 = speech_to_text(start_prompt=lbl["rec_btn_general"], stop_prompt=lbl["stop_btn_general"], language='en', key='ans_1_mic')
     
+    if ans_1:
+        st.session_state['persisted_ans1'] = ans_1
+        
     if st.session_state['persisted_ans1']:
         st.write(f"**Answer Recorded:** {st.session_state['persisted_ans1']}")
 
