@@ -10,11 +10,17 @@ from deep_translator import GoogleTranslator
 # Initialize Page Setting
 st.set_page_config(page_title="AI Swasthya Voice Portal", page_icon="🎙️", layout="centered")
 
+# --- INITIALIZE SESSION STATES TO PREVENT RERENDER RESET ERRORS ---
+if 'voice_transcript' not in st.session_state:
+    st.session_state['voice_transcript'] = ""
+if 'ocr_transcript' not in st.session_state:
+    st.session_state['ocr_transcript'] = ""
+if 'frozen_questions' not in st.session_state:
+    st.session_state['frozen_questions'] = None
+
 # --- MULTILINGUAL INTERFACE DICTIONARY ---
-# Language selection widget right at the top
 ui_lang = st.selectbox("🌐 Select Portal UI Language / पोर्टल की भाषा चुनें", ["English", "Hindi (हिंदी)"])
 
-# Dictionary containing UI text translations
 text_labels = {
     "English": {
         "title": "🏥 Voice & Vision AI Patient Intake Portal",
@@ -46,31 +52,30 @@ text_labels = {
         "title": "🏥 वॉयस और विज़न एआई मरीज इनटेक पोर्टल",
         "caption": "प्रथम वर्ष बीटेक प्रोटोटाइप: बहुभाषी भाषण और ओसीआर संचालित रूटिंग",
         "sec1_h": "1. 🎙️ अपने लक्षण और प्रोफाइल बोलें",
-        "sec1_p": "नीचे दिए गए बटन पर क्लिक करें और अपना नाम, उम्र और लक्षण **अंग्रेजी, हिंदी या उर्दू** में स्पष्ट रूप से बताएं।",
+        "sec1_p": "नीचे दिए गए बटन पर क्लिक करें और अपना नाम, उम्र और लक्षण अंग्रेजी, हिंदी या उर्दू में स्पष्ट रूप से बताएं।",
         "rec_btn_1": "🔴 आवाज रिकॉर्ड करना शुरू करें (अंग्रेजी/हिंदी/उर्दू)",
         "stop_btn_1": "⏹️ आवाज बंद करें और प्रोसेस करें",
         "capture_success": "✨ आवाज सफलतापूर्वक रिकॉर्ड हो गई!",
-        "orig_msg": "**आपने जो कहा (मूल):**",
-        "trans_msg": "**अनुवादित अंग्रेजी प्रोफ़ाइल:**",
+        "orig_msg": "आपने जो कहा (मूल):",
+        "trans_msg": "अनुवादित अंग्रेजी प्रोफ़ाइल:",
         "sec2_h": "2. 📸 पिछला पुराना पर्चा अपलोड करें",
         "sec2_p": "क्रोनिक इतिहास की जांच के लिए पिछले मेडिकल नोट्स या उपचार फाइलें जोड़ें।",
         "uploader_label": "पर्चे की फोटो खींचे या अपलोड करें",
         "ocr_spinner": "एआई पर्चे से लिखावट और टेक्स्ट पढ़ रहा है...",
-        "ocr_success": "✓ एआई कैरेक्टर निष्कर्षण और अनुवाद समाप्त!",
-        "ocr_expander": "📄 निकाले गए टेक्स्ट को देखें",
-        "sec3_h": "3. 🩺 बुद्धिमान नैदानिक ​​मार्गदर्शन",
-        "tailored_h": "💡 अनुकूलित एआई अनुवर्ती प्रश्न 1:",
-        "tailored_h2": "💡 गहन एआई अनुवर्ती प्रश्न 2:",
-        "rec_btn_general": "🎙️ उत्तर रिकॉर्ड करें",
-        "stop_btn_general": "⏹️ उत्तर सहेजें",
-        "assigned_h": "### 📍 आपके आवंटित डॉक्टर और क्लिनिक स्थान",
-        "case_h": "📋 औपचारिक नैदानिक ​​केस शीट और निर्यात",
+        "ocr_success": "एआई कैरेक्टर निष्कर्षण और अनुवाद समाप्त!",
+        "ocr_expander": "निकाले गए टेक्स्ट को देखें",
+        "sec3_h": "3. 🩺 बुद्धिमान नैदानिक मार्गदर्शन",
+        "tailored_h": "अनुकूलित एआई अनुवर्ती प्रश्न 1:",
+        "tailored_h2": "गहन एआई अनुवर्ती प्रश्न 2:",
+        "rec_btn_general": "उत्तर रिकॉर्ड करें",
+        "stop_btn_general": "उत्तर सहेजें",
+        "assigned_h": "### आपके आवंटित डॉक्टर और क्लिनिक स्थान",
+        "case_h": "औपचारिक नैदानिक केस शीट और निर्यात",
         "health_rec_h": "### आयुष डिजिटल स्वास्थ्य रिकॉर्ड",
-        "download_lbl": "📥 क्लिनिक केस शीट डाउनलोड करें (CSV)"
+        "download_lbl": "क्लिनिक केस शीट डाउनलोड करें (CSV)"
     }
 }
 
-# Selected labels mapping shortcut
 lbl = text_labels[ui_lang]
 
 st.title(lbl["title"])
@@ -84,17 +89,16 @@ def speak_text(text_to_speak, key):
         tts.write_to_fp(sound_file)
         st.audio(sound_file, format="audio/mp3", start_time=0)
     except Exception as e:
-        st.error(f"Audio engine delay: {e}")
+        pass
 
 # Helper function to translate any language text to English safely
 def translate_to_english(text_to_translate):
-    if not text_to_translate.strip():
+    if not text_to_translate or not text_to_translate.strip():
         return ""
     try:
         translated = GoogleTranslator(source='auto', target='en').translate(text_to_translate)
         return translated.lower()
     except Exception as e:
-        st.warning(f"Translation service busy, using raw text. Error: {e}")
         return text_to_translate.lower()
 
 # Cache the AI text-reader model so it doesn't slow down the site on every button click
@@ -103,14 +107,6 @@ def load_ocr_reader():
     return easyocr.Reader(['en'])
 
 reader = load_ocr_reader()
-
-# Initialize critical session variables so they never clear out when recording answers
-if 'voice_transcript' not in st.session_state:
-    st.session_state['voice_transcript'] = ""
-if 'ocr_transcript' not in st.session_state:
-    st.session_state['ocr_transcript'] = ""
-if 'frozen_questions' not in st.session_state:
-    st.session_state['frozen_questions'] = None
 
 # --- SECTION 1: VOICE INTAKE ---
 st.header(lbl["sec1_h"])
@@ -126,16 +122,15 @@ spoken_text = speech_to_text(
 
 if spoken_text:
     st.success(lbl["capture_success"])
-    st.info(f'{lbl["orig_msg"]} "{spoken_text}"')
+    st.info(f"{lbl['orig_msg']} {spoken_text}")
     
-    with st.spinner("Translating your response to English..."):
+    with st.spinner("Translating..."):
         translated_voice = translate_to_english(spoken_text)
         st.session_state['voice_transcript'] = translated_voice
-        # Clear frozen questions whenever a totally new base symptoms voice is registered
         st.session_state['frozen_questions'] = None 
 
 if st.session_state['voice_transcript']:
-    st.info(f'{lbl["trans_msg"]} "{st.session_state["voice_transcript"]}"')
+    st.info(f"{lbl['trans_msg']} {st.session_state['voice_transcript']}")
 
 # --- SECTION 2: PRESCRIPTION OCR ---
 st.divider()
@@ -164,43 +159,40 @@ if st.session_state['voice_transcript'] or st.session_state['ocr_transcript']:
     
     combined_health_profile = st.session_state['voice_transcript'] + " " + st.session_state['ocr_transcript']
     
-    # 🧠 Lock down static symptom evaluation choices in session state if not set yet
     if st.session_state['frozen_questions'] is None:
         is_ortho = any(word in combined_health_profile for word in ["joint", "pain", "stiffness", "knee", "bone", "arthritis", "backache", "fracture", "dard"])
         is_cardio = any(word in combined_health_profile for word in ["heart", "chest", "breathing", "pressure", "bp", "hypertension", "stroke", "heartbeat"])
         is_fever_cold = any(word in combined_health_profile for word in ["fever", "cough", "cold", "flu", "chills", "headache", "throat"])
         is_stomach = any(word in combined_health_profile for word in ["stomach", "belly", "vomit", "nausea", "diarrhea", "acidity", "digestion"])
 
-        # Decide questions upfront based on profile parameters
         if is_ortho:
             q1 = "Based on your bone or joint pain indicators, does your stiffness significantly worsen during cold weather mornings or after sitting down for a long period?"
-            q2 = "Follow-up: Do you also experience swelling or a cracking clicking sound when moving that joint?"
+            q2 = "Follow-up Question: Do you also experience swelling or a cracking clicking sound when moving that joint?"
             category = "ortho"
         elif is_cardio:
             q1 = "Since cardiovascular patterns are highlighted, are you experiencing any active numbness in your left arm, jaw pain, or sudden cold sweats?"
-            q2 = "Follow-up: Does this chest discomfort worsen when climbing stairs or taking deep breaths?"
+            q2 = "Follow-up Question: Does this chest discomfort worsen when climbing stairs or taking deep breaths?"
             category = "cardio"
         elif is_fever_cold:
             q1 = "Regarding your fever or cold symptoms, do you currently have a sore throat, loss of taste, or a cough that produces dark mucus?"
-            q2 = "Follow-up: Is your body temperature crossing 101 degrees, and are you experiencing severe shivering?"
+            q2 = "Follow-up Question: Is your body temperature crossing 101 degrees, and are you experiencing severe shivering?"
             category = "fever"
         elif is_stomach:
             q1 = "For your abdominal issues, are you experiencing sharp cramps on an empty stomach or have you recently consumed outside street food?"
-            q2 = "Follow-up: Is the stomach pain radiating to your lower back, or accompanied by vomiting?"
+            q2 = "Follow-up Question: Is the stomach pain radiating to your lower back, or accompanied by vomiting?"
             category = "stomach"
         else:
             q1 = "Could you tell me if your general symptom started suddenly today, or has it been ongoing for more than three days?"
-            q2 = "Follow-up: Are you experiencing generalized fatigue or trouble sleeping due to this condition?"
+            q2 = "Follow-up Question: Are you experiencing generalized fatigue or trouble sleeping due to this condition?"
             category = "general"
             
         st.session_state['frozen_questions'] = {"q1": q1, "q2": q2, "category": category}
 
-    # Fetch variables out of our immutable session safehouse
     q_data = st.session_state['frozen_questions']
     current_category = q_data["category"]
 
-    # 🛑 Render Question 1 
-     st.subheader(lbl["tailored_h"])
+    # Render Frozen Question 1
+    st.subheader(lbl["tailored_h"])
     st.info(f"🤖 Q1: {q_data['q1']}")
     speak_text(q_data['q1'], key="audio_q1")
     
